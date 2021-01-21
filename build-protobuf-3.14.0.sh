@@ -8,12 +8,13 @@ echo "$(tput sgr0)"
 # Controls which architectures are build/included in the
 # universal binaries and libraries this script produces.
 # Set each to '1' to include, '0' to exclude.
-BUILD_X86_64_MAC=1
+
 BUILD_X86_64_IOS_SIM=1
 BUILD_I386_IOS_SIM=1
-BUILD_ARMV7_IPHONE=1
-BUILD_ARMV7S_IPHONE=1
+BUILD_ARMV7_IPHONE=1 
 BUILD_ARM64_IPHONE=1
+BUILD_X86_64_MAC=0
+BUILD_ARMV7S_IPHONE=0
 
 PB_VERSION=3.14.0
 
@@ -24,7 +25,7 @@ PB_VERSION=3.14.0
 GOOGLE_NAMESPACE=google
 
 # Set this to the minimum iOS SDK version you wish to support.
-IOS_MIN_SDK=7.0
+IOS_MIN_SDK=9.0
 
 (
 
@@ -48,6 +49,13 @@ IPHONEOS_SYSROOT=${IPHONEOS_PLATFORM}/Developer/SDKs/${IOS_SDK}.sdk
 
 IPHONESIMULATOR_PLATFORM=${XCODEDIR}/Platforms/iPhoneSimulator.platform
 IPHONESIMULATOR_SYSROOT=${IPHONESIMULATOR_PLATFORM}/Developer/SDKs/${SIM_SDK}.sdk
+
+# succeed on arm64, x86_64_ios. (failed on i386, arm7)
+BITCODE_ENABLE="-fembed-bitcode"
+
+# https://stackoverflow.com/questions/34959767/whats-the-difference-between-fembed-bitcode-and-bitcode-generation-mode
+# need test for all architectures to use this flag instead of ${BITCODE_ENABLE}
+BITCODE_ENABLE_MARKER='-fembed-bitcode-marker'
 
 CC=clang
 CFLAGS="-DNDEBUG -g -O0 -pipe -fPIC -fcxx-exceptions"
@@ -156,7 +164,7 @@ echo "$(tput sgr0)"
     cd /tmp/protobuf-$PB_VERSION
     ./autogen.sh
     make distclean
-    ./configure --build=x86_64-apple-darwin13.0.0 --host=x86_64-apple-darwin13.0.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/x86_64_ios "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT} -miphoneos-version-min=${IOS_MIN_SDK}" LDFLAGS="-arch x86_64 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
+    ./configure --build=x86_64-apple-darwin20.2.0 --host=x86_64-apple-darwin --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/x86_64_ios "CC=${CC}" "CFLAGS=${CFLAGS} ${BITCODE_ENABLE} -miphoneos-version-min=${IOS_MIN_SDK} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT} -miphoneos-version-min=${IOS_MIN_SDK}" LDFLAGS="-arch x86_64 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
     make ${EXTRA_MAKE_FLAGS}
     make ${EXTRA_MAKE_FLAGS} install
 )
@@ -184,7 +192,7 @@ echo "$(tput sgr0)"
     cd /tmp/protobuf-$PB_VERSION
     ./autogen.sh
     make distclean
-    ./configure --build=x86_64-apple-darwin13.0.0 --host=i386-apple-darwin13.0.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/i386 "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch i386 -isysroot ${IPHONESIMULATOR_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch i386 -isysroot ${IPHONESIMULATOR_SYSROOT} -miphoneos-version-min=${IOS_MIN_SDK}" LDFLAGS="-arch i386 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
+    ./configure --build=x86_64-apple-darwin20.2.0 --host=i386-apple-darwin20.2.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/i386 "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch i386 -isysroot ${IPHONESIMULATOR_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch i386 -isysroot ${IPHONESIMULATOR_SYSROOT} -miphoneos-version-min=${IOS_MIN_SDK}" LDFLAGS="-arch i386 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
     make ${EXTRA_MAKE_FLAGS}
     make ${EXTRA_MAKE_FLAGS} install
 )
@@ -194,6 +202,9 @@ I386_IOS_SIM_PROTOBUF_LITE=i386/lib/libprotobuf-lite.a
 
 else
 
+#   --build=x86_64-apple-${DARWIN}    --host=x86_64-apple-${DARWIN}    --with-protoc=${PROTOC} --disable-shared                            --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/x86_64-sim "CC=${CC}" "CFLAGS=${CFLAGS} -mios-simulator-version-min=${MIN_SDK_VERSION} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -mios-simulator-version-min=${MIN_SDK_VERSION} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT}" LDFLAGS="-arch x86_64 -mios-simulator-version-min=${MIN_SDK_VERSION} ${LDFLAGS} -L${IPHONESIMULATOR_SYSROOT}/usr/lib/ -L${IPHONESIMULATOR_SYSROOT}/usr/lib/system" "LIBS=${LIBS}"
+# --build=x86_64-apple-darwin20.2.0 --host=x86_64-apple-darwin20.2.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/x86_64_ios "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch x86_64 -isysroot ${IPHONESIMULATOR_SYSROOT} -miphoneos-version-min=${IOS_MIN_SDK}" LDFLAGS="-arch x86_64 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
+# --build=x86_64-apple-darwin20.2.0 --host=i386-apple-  darwin20.2.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/i386       "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch i386   -isysroot ${IPHONESIMULATOR_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch   i386 -isysroot ${IPHONESIMULATOR_SYSROOT} -miphoneos-version-min=${IOS_MIN_SDK}" LDFLAGS="-arch   i386 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
 I386_IOS_SIM_PROTOBUF=
 I386_IOS_SIM_PROTOBUF_LITE=
 
@@ -212,7 +223,7 @@ echo "$(tput sgr0)"
     cd /tmp/protobuf-$PB_VERSION
     ./autogen.sh
     make distclean
-    ./configure --build=x86_64-apple-darwin13.0.0 --host=armv7-apple-darwin13.0.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/armv7 "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch armv7 -isysroot ${IPHONEOS_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch armv7 -isysroot ${IPHONEOS_SYSROOT}" LDFLAGS="-arch armv7 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
+    ./configure --build=x86_64-apple-darwin20.2.0 --host=armv7-apple-darwin20.2.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/armv7 "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch armv7 -isysroot ${IPHONEOS_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch armv7 -isysroot ${IPHONEOS_SYSROOT}" LDFLAGS="-arch armv7 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
     make ${EXTRA_MAKE_FLAGS}
     make ${EXTRA_MAKE_FLAGS} install
 )
@@ -240,7 +251,7 @@ echo "$(tput sgr0)"
     cd /tmp/protobuf-$PB_VERSION
     ./autogen.sh
     make distclean
-    ./configure --build=x86_64-apple-darwin13.0.0 --host=armv7s-apple-darwin13.0.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/armv7s "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch armv7s -isysroot ${IPHONEOS_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch armv7s -isysroot ${IPHONEOS_SYSROOT}" LDFLAGS="-arch armv7s -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
+    ./configure --build=x86_64-apple-darwin20.2.0 --host=armv7s-apple-darwin20.2.0 --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/armv7s "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch armv7s -isysroot ${IPHONEOS_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch armv7s -isysroot ${IPHONEOS_SYSROOT}" LDFLAGS="-arch armv7s -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
     make ${EXTRA_MAKE_FLAGS} 
     make ${EXTRA_MAKE_FLAGS} install
 
@@ -286,7 +297,7 @@ echo "$(tput sgr0)"
     cd /tmp/protobuf-$PB_VERSION
     ./autogen.sh
     make distclean
-    ./configure --build=x86_64-apple-darwin13.0.0 --host=arm --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/arm64 "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch arm64 -isysroot ${IPHONEOS_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} -arch arm64 -isysroot ${IPHONEOS_SYSROOT}" LDFLAGS="-arch arm64 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
+    ./configure --build=x86_64-apple-darwin20.2.0 --host=arm --with-protoc=${PREFIX}/platform/x86_64/bin/protoc --disable-shared --prefix=${PREFIX} --exec-prefix=${PREFIX}/platform/arm64 "CC=${CC}" "CFLAGS=${CFLAGS} -miphoneos-version-min=${IOS_MIN_SDK} -arch arm64 -isysroot ${IPHONEOS_SYSROOT}" "CXX=${CXX}" "CXXFLAGS=${CXXFLAGS} ${BITCODE_ENABLE} -arch arm64 -isysroot ${IPHONEOS_SYSROOT}" LDFLAGS="-arch arm64 -miphoneos-version-min=${IOS_MIN_SDK} ${LDFLAGS}" "LIBS=${LIBS}"
     make ${EXTRA_MAKE_FLAGS}
     make ${EXTRA_MAKE_FLAGS} install
 )
