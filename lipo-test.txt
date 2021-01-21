@@ -1,0 +1,26 @@
+lipo \
+./arm64/lib/libprotobuf.a \
+./armv7/lib/libprotobuf.a \
+-create \
+-output ./libprotobuf-arm.a
+
+
+lipo \
+./i386/lib/libprotobuf.a \
+./x86_64_ios/lib/libprotobuf.a \
+-create \
+-output ./libprotobuf-simulator.a
+
+
+lipo \
+./arm64/lib/libprotobuf-lite.a \
+./armv7/lib/libprotobuf-lite.a \
+-create \
+-output ./libprotobuf-arm-lite.a
+
+
+lipo \
+./i386/lib/libprotobuf-lite.a \
+./x86_64_ios/lib/libprotobuf-lite.a \
+-create \
+-output ./libprotobuf-simulator-lite.a
